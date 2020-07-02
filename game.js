@@ -10,8 +10,16 @@ var board = [
 ]
 var highlights = [];
 
-var hoverX = 0;
-var hoverY = 0;
+var mousePlaceX = 0;
+var mousePlaceY = 0;
+
+var selected = false;
+var selectX = 0;
+var selectY = 0;
+var selectedMoveset = {
+    empty : [],
+    moved : []
+};
 
 var assets = ['board','bB','bH','bK','bP','bQ','bR','wB','wH','wK','wP','wQ','wR'];
 var imagesToBeLoaded = assets.length;
@@ -28,15 +36,34 @@ window.onload = function() {
     images = loadImages();
 
     c.addEventListener('mousemove', onMouseMove);
+    c.addEventListener('click', onLeftClick);
+    c.addEventListener('contextmenu', onRightClick);
 };
 
 function onMouseMove(evt){
     let mousepos = getMousePos(evt);
     
-    hoverX = bound(mousepos.x, 0, width);
-    hoverY = bound(mousepos.y, 0, height);
-    hoverX = Math.floor(hoverX/colDivider)*colDivider;
-    hoverY = Math.floor(hoverY/rowDivider)*rowDivider;
+    mousePlaceX = bound(mousepos.x, 0, width);
+    mousePlaceY = bound(mousepos.y, 0, height);
+    mousePlaceX = Math.floor(mousePlaceX/colDivider);
+    mousePlaceY = Math.floor(mousePlaceY/rowDivider);
+    displayBoard();
+}
+
+function onLeftClick(){
+    let peice = board[mousePlaceY][mousePlaceX];
+    if(peice != '__'){
+        selected = true;
+        selectX = mousePlaceX;
+        selectY = mousePlaceY;
+    }
+    selectedMoveset = getMoveSet(selectX,selectY);
+    displayBoard();
+}
+
+function onRightClick(evt){
+    evt.preventDefault();
+    selected = false;
     displayBoard();
 }
 
@@ -65,10 +92,29 @@ function displayBoard(){
     ctx.drawImage(images['board'],0,0,width,height);
     
     ctx.globalAlpha = 0.5;
+
     ctx.fillStyle = '#03fc2c';
-    ctx.fillRect(hoverX,hoverY,colDivider,rowDivider);
+    ctx.fillRect(mousePlaceX*colDivider,mousePlaceY*rowDivider,colDivider,rowDivider);
+
+    if(selected){
+        ctx.fillStyle = '#307ff0';
+        ctx.fillRect(selectX*colDivider,selectY*rowDivider,colDivider,rowDivider);
+        for(const square of selectedMoveset.empty){
+            ctx.fillStyle = '#f2ff3d';
+            let y = square[0];
+            let x = square[1];
+            ctx.fillRect(x*colDivider,y*rowDivider,colDivider,rowDivider);
+        }
+        for(const square of selectedMoveset.moved){
+            ctx.fillStyle = '#ff0363';
+            let y = square[0];
+            let x = square[1];
+            ctx.fillRect(x*colDivider,y*rowDivider,colDivider,rowDivider);
+        }
+    }
+
     ctx.globalAlpha = 1;
-    
+
     let rowN = 0;
     for(const row of board){
         let colN = 0;
@@ -91,7 +137,189 @@ function getMousePos(evt){
         y: evt.clientY - rect.top,
     }
 }
+
 function bound(v, a, b){
     return Math.max(Math.min(v, b), a);
 }
 
+function getMoveSet(col, row){
+    let peice = board[row][col];
+    let type = peice.charAt(1);
+    let color = peice.charAt(0);
+    let moveset = {
+        empty : [],
+        moved : []
+    };
+    if(type == 'R'){
+        let i = 1;
+        //left
+        while(true){
+            if(col - i < 0){
+                break;
+            }
+            let p = board[row][col - i];
+            if(p == '__'){
+                moveset.empty.push([row,col-i]);
+            }else{
+                if(col - i < 1){
+                    break;
+                }
+                if(board[row][col - i - 1] == '__'){
+                    moveset.moved.push([row,col-i,row,col-i-1]);
+                }
+                break;
+            }
+            i++;
+        }
+        i = 1;
+        //up
+        while(true){
+            if(row - i < 0){
+                break;
+            }
+            let p = board[row - i][col];
+            if(p == '__'){
+                moveset.empty.push([row - i,col]);
+            }else{
+                if(row - i < 1){
+                    break;
+                }
+                if(board[row - i - 1][col] == '__'){
+                    moveset.moved.push([row-i,col,row-i-1,col]);
+                }
+                break;
+            }
+            i++;
+        }
+        i = 1;
+        //right
+        while(true){
+            if(col + i > 7){
+                break;
+            }
+            let p = board[row][col + i];
+            if(p == '__'){
+                moveset.empty.push([row,col+i]);
+            }else{
+                if(col + i > 6){
+                    break;
+                }
+                if(board[row][col + i + 1] == '__'){
+                    moveset.moved.push([row,col+i,row,col+i+1]);
+                }
+                break;
+            }
+            i++;
+        }
+        i = 1;
+        //down
+        while(true){
+            if(row + i > 7){
+                break;
+            }
+            let p = board[row + i][col];
+            if(p == '__'){
+                moveset.empty.push([row + i,col]);;
+            }else{
+                if(row + i > 6){
+                    break;
+                }
+                if(board[row + i + 1][col] == '__'){
+                    moveset.moved.push([row+i,col,row+i+1,col]);
+                }
+                break;
+            }
+            i++;
+        }
+    }
+
+    if(type == 'B'){
+        let i = 1;
+        //upLeft
+        while(true){
+            if(row - i < 0 || col - i < 0){
+                break;
+            }
+            let p = board[row - i][col - i];
+            if(p == '__'){
+                moveset.empty.push([row - i, col - i]);
+            }else{
+                if(row - i < 1 || col - i < 1){
+                    break;
+                }
+                if(board[row - i - 1][col - i - 1] == '__'){
+                    moveset.moved.push([row-i,col-i,row-i-1,col-i-1]);
+                }
+                break;
+            }
+            
+            i++;
+        }
+        i = 1;
+        //downRight
+        while(true){
+            if(row + i > 7 || col + i > 7){
+                break;
+            }
+            let p = board[row + i][col + i];
+            if(p == '__'){
+                moveset.empty.push([row + i, col + i]);
+            }else{
+                if(row + i > 6 || col + i > 6){
+                    break;
+                }
+                if(board[row + i + 1][col + i + 1] == '__'){
+                    moveset.moved.push([row+i,col+i,row+i+1,col+i+1]);
+                }
+                break;
+            }
+            
+            i++;
+        }
+        i = 1;
+        //upRight
+        while(true){
+            if(row - i < 0 || col + i > 7){
+                break;
+            }
+            let p = board[row - i][col + i];
+            if(p == '__'){
+                moveset.empty.push([row - i, col + i]);
+            }else{
+                if(row - i < 1 || col + i > 6){
+                    break;
+                }
+                if(board[row - i - 1][col + i + 1] == '__'){
+                    moveset.moved.push([row-i,col+i,row-i-1,col+i+1]);
+                }
+                break;
+            }
+            
+            i++;
+        }
+        i = 1
+        //downLeft
+        while(true){
+            if(row + i > 7 || col - i < 0){
+                break;
+            }
+            let p = board[row + i][col - i];
+            if(p == '__'){
+                moveset.empty.push([row + i, col - i]);
+            }else{
+                if(row + i > 6 || col - i < 1){
+                    break;
+                }
+                if(board[row + i + 1][col - i - 1] == '__'){
+                    moveset.moved.push([row+i,col-i,row+i+1,col-i-1]);
+                }
+                break;
+            }
+            
+            i++;
+        }
+    
+    }
+
+    return moveset;
+}
