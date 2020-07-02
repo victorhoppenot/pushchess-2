@@ -150,7 +150,8 @@ function getMoveSet(col, row){
         empty : [],
         moved : []
     };
-    if(type == 'R'){
+
+    if(type == 'R' || type == 'Q'){
         let i = 1;
         //left
         while(true){
@@ -233,7 +234,7 @@ function getMoveSet(col, row){
         }
     }
 
-    if(type == 'B'){
+    if(type == 'B' || type == 'Q'){
         let i = 1;
         //upLeft
         while(true){
@@ -318,7 +319,42 @@ function getMoveSet(col, row){
             
             i++;
         }
-    
+    }
+
+    if(type == 'K'){
+        let moves = [[1,1],[1,0],[1,-1],[0,1],[0,-1],[-1,1],[-1,0],[-1,-1]];
+        for(const move of moves){
+            let down = move[0];
+            let right = move[1];
+            if(bound(row + down, 0, 7) != row + down || bound(col + right,0,7) != col + right){
+                continue;
+            }
+            if(board[row + down][col + right] == '__'){
+                moveset.empty.push([row+down,col+right]);
+            }
+        }
+    }
+
+    if(type == 'H'){
+        let moves = [[-2,1],[-2,-1],[2,1],[2,-1],[1,2],[-1,2],[1,-2],[-1,-2]];
+        for(const move of moves){
+            let down = move[0];
+            let right = move[1];
+            if(bound(row + down, 0, 7) != row + down || bound(col + right,0,7) != col + right){
+                continue;
+            }
+            if(board[row + down][col + right] == '__'){
+                moveset.empty.push([row+down,col+right]);
+            }else{
+                let directionDown = bound(down,-1,1);
+                let directionRight = bound(right,-1,1);
+                if(bound(row + down + directionDown, 0, 7) ==  row + down + directionDown || bound(col + right + directionRight, 0, 7) == col + right + directionRight){
+                    if(board[row + down + directionDown][col + right + directionRight] == '__'){
+                        moveset.moved.push([row+down,col+right,row+down+directionDown,col+right+directionRight]);
+                    }
+                }
+            }
+        }
     }
 
     return moveset;
