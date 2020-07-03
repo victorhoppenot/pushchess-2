@@ -24,7 +24,12 @@ var selectedMoveset = {
 var assets = ['board','bB','bH','bK','bP','bQ','bR','wB','wH','wK','wP','wQ','wR'];
 var imagesToBeLoaded = assets.length;
 
-window.onload = function() {
+var port = document.getElementById("ip");
+var name = document.getElementById("name");
+var key = document.getElementById("key");
+var playButton = document.getElementById("play");
+
+playButton.onclick = function() {
     c = document.getElementById('gc');
     ctx = c.getContext('2d');
 
