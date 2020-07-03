@@ -28,6 +28,7 @@ var port = document.getElementById("ip");
 var name = document.getElementById("name");
 var key = document.getElementById("key");
 var playButton = document.getElementById("play");
+var player = "w";
 
 playButton.onclick = function() {
     c = document.getElementById('gc');
@@ -57,10 +58,13 @@ function onMouseMove(evt){
 
 function onLeftClick(){
     let peice = board[mousePlaceY][mousePlaceX];
-    if(peice != '__'){
+    let type = peice.charAt(0);
+    if(type == player){
         selected = true;
         selectX = mousePlaceX;
         selectY = mousePlaceY;
+    }else if(selecteed){
+
     }
     selectedMoveset = getMoveSet(selectX,selectY);
     displayBoard();
@@ -164,6 +168,9 @@ function getMoveSet(col, row){
                 break;
             }
             let p = board[row][col - i];
+            if(p.charAt(0) == color){
+                break;
+            }
             if(p == '__'){
                 moveset.empty.push([row,col-i]);
             }else{
@@ -184,6 +191,9 @@ function getMoveSet(col, row){
                 break;
             }
             let p = board[row - i][col];
+            if(p.charAt(0) == color){
+                break;
+            }
             if(p == '__'){
                 moveset.empty.push([row - i,col]);
             }else{
@@ -204,6 +214,9 @@ function getMoveSet(col, row){
                 break;
             }
             let p = board[row][col + i];
+            if(p.charAt(0) == color){
+                break;
+            }
             if(p == '__'){
                 moveset.empty.push([row,col+i]);
             }else{
@@ -224,6 +237,9 @@ function getMoveSet(col, row){
                 break;
             }
             let p = board[row + i][col];
+            if(p.charAt(0) == color){
+                break;
+            }
             if(p == '__'){
                 moveset.empty.push([row + i,col]);;
             }else{
@@ -247,6 +263,9 @@ function getMoveSet(col, row){
                 break;
             }
             let p = board[row - i][col - i];
+            if(p.charAt(0) == color){
+                break;
+            }
             if(p == '__'){
                 moveset.empty.push([row - i, col - i]);
             }else{
@@ -268,6 +287,9 @@ function getMoveSet(col, row){
                 break;
             }
             let p = board[row + i][col + i];
+            if(p.charAt(0) == color){
+                break;
+            }
             if(p == '__'){
                 moveset.empty.push([row + i, col + i]);
             }else{
@@ -289,6 +311,9 @@ function getMoveSet(col, row){
                 break;
             }
             let p = board[row - i][col + i];
+            if(p.charAt(0) == color){
+                break;
+            }
             if(p == '__'){
                 moveset.empty.push([row - i, col + i]);
             }else{
@@ -310,6 +335,9 @@ function getMoveSet(col, row){
                 break;
             }
             let p = board[row + i][col - i];
+            if(p.charAt(0) == color){
+                break;
+            }
             if(p == '__'){
                 moveset.empty.push([row + i, col - i]);
             }else{
@@ -348,7 +376,11 @@ function getMoveSet(col, row){
             if(bound(row + down, 0, 7) != row + down || bound(col + right,0,7) != col + right){
                 continue;
             }
-            if(board[row + down][col + right] == '__'){
+            let p = (board[row + down][col + right]);
+            if(p.charAt(0) == color){
+                continue;
+            }
+            if(p == '__'){
                 moveset.empty.push([row+down,col+right]);
             }else{
                 let directionDown = bound(down,-1,1);
