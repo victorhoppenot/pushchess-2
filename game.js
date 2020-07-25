@@ -24,13 +24,23 @@ var selectedMoveset = {
 var assets = ['board','bB','bH','bK','bP','bQ','bR','wB','wH','wK','wP','wQ','wR'];
 var imagesToBeLoaded = assets.length;
 
-var port = document.getElementById("ip");
-var name = document.getElementById("name");
+var ip = document.getElementById("ip");
+var nom = document.getElementById("name");
 var key = document.getElementById("key");
 var playButton = document.getElementById("play");
-var player = "w";
+var player = '';
+var play = 'b';
 
 playButton.onclick = function() {
+    ip = ip.value;
+    key = key.value;
+    nom = nom.value;
+
+    webSocket = new WebSocket("ws://" + ip);
+    webSocket.onclose = webSocketClose;
+    webSocket.onopen = webSocketOpen;
+    webSocket.onmessage = webSocketMessage;
+
     c = document.getElementById('gc');
     ctx = c.getContext('2d');
 
@@ -63,8 +73,23 @@ function onLeftClick(){
         selected = true;
         selectX = mousePlaceX;
         selectY = mousePlaceY;
-    }else if(selecteed){
-
+    }else if(selected && player == play){
+        if(isArrayInArray(selectedMoveset.empty,[mousePlaceY,mousePlaceX])){
+            selected = false;
+            webSocket.send("play " + key + " " + mousePlaceX + "," + mousePlaceY + "," + board[selectY][selectX] + "," + selectX + "," + selectY + ",__");
+            webSocket.send("switch");
+        }else{
+             for(let item of selectedMoveset.moved){
+                if(item[0] == mousePlaceY && item[1] == mousePlaceX){
+                    selected = false;
+                    if(item[2] != -99 && item[3] != -99){
+                        webSocket.send("play " + key + " " + item[3] + "," + item[2] + "," + board[mousePlaceY][mousePlaceX]);
+                    }
+                    webSocket.send("play " + key + " " + mousePlaceX + "," + mousePlaceY + "," + board[selectY][selectX] + "," + selectX + "," + selectY + ",__");
+                    webSocket.send("switch");
+                }
+            }
+        }
     }
     selectedMoveset = getMoveSet(selectX,selectY);
     displayBoard();
@@ -175,6 +200,7 @@ function getMoveSet(col, row){
                 moveset.empty.push([row,col-i]);
             }else{
                 if(col - i < 1){
+                    moveset.moved.push([row,col-i,-99,-99]);
                     break;
                 }
                 if(board[row][col - i - 1] == '__'){
@@ -198,6 +224,7 @@ function getMoveSet(col, row){
                 moveset.empty.push([row - i,col]);
             }else{
                 if(row - i < 1){
+                    moveset.moved.push([row-i,col,-99,-99]);
                     break;
                 }
                 if(board[row - i - 1][col] == '__'){
@@ -221,6 +248,7 @@ function getMoveSet(col, row){
                 moveset.empty.push([row,col+i]);
             }else{
                 if(col + i > 6){
+                    moveset.moved.push([row,col+i,-99,-99]);
                     break;
                 }
                 if(board[row][col + i + 1] == '__'){
@@ -244,6 +272,7 @@ function getMoveSet(col, row){
                 moveset.empty.push([row + i,col]);;
             }else{
                 if(row + i > 6){
+                    moveset.moved.push([row+i,col,-99,-99]);
                     break;
                 }
                 if(board[row + i + 1][col] == '__'){
@@ -270,6 +299,7 @@ function getMoveSet(col, row){
                 moveset.empty.push([row - i, col - i]);
             }else{
                 if(row - i < 1 || col - i < 1){
+                    moveset.moved.push([row-i,col-i,-99,-99])
                     break;
                 }
                 if(board[row - i - 1][col - i - 1] == '__'){
@@ -294,6 +324,7 @@ function getMoveSet(col, row){
                 moveset.empty.push([row + i, col + i]);
             }else{
                 if(row + i > 6 || col + i > 6){
+                    moveset.moved.push([row+i,col+i,-99,-99]);
                     break;
                 }
                 if(board[row + i + 1][col + i + 1] == '__'){
@@ -318,6 +349,7 @@ function getMoveSet(col, row){
                 moveset.empty.push([row - i, col + i]);
             }else{
                 if(row - i < 1 || col + i > 6){
+                    moveset.moved.push([row-i,col+i,-99,-99]);
                     break;
                 }
                 if(board[row - i - 1][col + i + 1] == '__'){
@@ -342,6 +374,7 @@ function getMoveSet(col, row){
                 moveset.empty.push([row + i, col - i]);
             }else{
                 if(row + i > 6 || col - i < 1){
+                    moveset.moved.push([row+i,col-i,-99,-99]);
                     break;
                 }
                 if(board[row + i + 1][col - i - 1] == '__'){
@@ -389,10 +422,89 @@ function getMoveSet(col, row){
                     if(board[row + down + directionDown][col + right + directionRight] == '__'){
                         moveset.moved.push([row+down,col+right,row+down+directionDown,col+right+directionRight]);
                     }
+                }else{
+                    moveset.moved.push([row+down,col+right,-99,-99]);
                 }
             }
         }
     }
 
     return moveset;
+}
+
+function webSocketOpen(evt){
+    console.log("Connected to WebServer")
+    webSocket.send("join " + key + " " + nom);
+}
+
+function webSocketClose(evt){
+    location.reload();
+}
+
+function webSocketMessage(evt){
+    let message = evt.data;
+    console.log("WebServer says: " + message);
+    let obj = message.split(" ");
+    if(obj.length < 1){
+        return;
+    }
+    switch(obj[0]){
+        case "play":
+            if(obj.length < 2){
+                break;
+            }
+            let played = obj[1];
+            let plays = played.split(",");
+        
+            let x = 0;
+            let y = 0;
+            let place = '__';
+            let j = 0;
+            for(let i = 0; i < plays.length; i++){
+                let item = plays[i];
+                switch(j){
+                    case 0:
+                        x = parseInt(item);
+                        j++;
+                        break;
+
+                    case 1:
+                        y = parseInt(item);
+                        j++;
+                        break;
+
+                    case 2:
+                        place = item;
+                        j = 0;
+                        board[y][x] = place;
+                        console.log("placed " + place + " at " + x + " : " + y);
+                        break;
+                }
+            }
+            break;
+        case "setplayer":
+            if(obj.length < 2){
+                break;
+            }
+            player = obj[1];
+            break;
+        case "switch":
+            if(play == 'b'){
+                play = 'w';
+            }else{
+                play = 'b';
+            }
+            break;
+
+    }
+    displayBoard();
+}
+
+function isArrayInArray(arr, item){
+    var item_as_string = JSON.stringify(item);
+  
+    var contains = arr.some(function(ele){
+      return JSON.stringify(ele) === item_as_string;
+    });
+    return contains;
 }
